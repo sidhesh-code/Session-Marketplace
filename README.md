@@ -287,28 +287,6 @@ docker compose up --build -d
 
 ---
 
-## Environment Variables
-
-| Variable | Description | Example / Placeholder |
-| :--- | :--- | :--- |
-| `POSTGRES_DB` | Database name | `sessions_db` |
-| `POSTGRES_USER` | Database username | `sessions_user` |
-| `POSTGRES_PASSWORD` | Database password | `sessions_secure_password_123` |
-| `POSTGRES_HOST` | Database host | `postgres` |
-| `POSTGRES_PORT` | Database port | `5432` |
-| `DJANGO_SECRET_KEY` | Django secret key | `django-insecure-change-this-in-production-key-9812739` |
-| `DJANGO_DEBUG` | Django debug mode | `True` (Local) / `False` (Production) |
-| `ALLOWED_HOSTS` | Allowed hostnames | `localhost,127.0.0.1,backend,nginx` |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | `your-google-client-id.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | `your-google-client-secret` |
-| `GOOGLE_REDIRECT_URI` | Google OAuth Redirect URI | `http://localhost:8080/auth/callback` |
-| `JWT_ACCESS_LIFETIME_MINUTES` | Access token lifespan | `60` |
-| `JWT_REFRESH_LIFETIME_DAYS` | Refresh token lifespan | `7` |
-| `VITE_API_BASE_URL` | Frontend API base URL | `http://localhost:8080/api` |
-| `FRONTEND_URL` | Frontend origin | `http://localhost:8080` |
-
----
-
 ## Testing
 
 Run the complete backend automated test suite (including unit tests, authorization checks, and multi-threaded PostgreSQL concurrency race-condition tests) inside the Docker container:
