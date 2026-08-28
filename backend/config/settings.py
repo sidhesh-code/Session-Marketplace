@@ -1,13 +1,14 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-key-change-me')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,17 +61,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Database Configuration (Railway PostgreSQL, Docker Compose PostgreSQL, SQLite fallback)
+DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_PUBLIC_URL')
 USE_POSTGRES = os.environ.get('USE_POSTGRES', 'True').lower() in ('true', '1', 'yes')
 
-if USE_POSTGRES and os.environ.get('POSTGRES_HOST'):
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif USE_POSTGRES and (os.environ.get('POSTGRES_HOST') or os.environ.get('PGHOST')):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'sessions_db'),
-            'USER': os.environ.get('POSTGRES_USER', 'sessions_user'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'sessions_secure_password_123'),
-            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'NAME': os.environ.get('POSTGRES_DB') or os.environ.get('PGDATABASE') or 'sessions_db',
+            'USER': os.environ.get('POSTGRES_USER') or os.environ.get('PGUSER') or 'sessions_user',
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD') or os.environ.get('PGPASSWORD') or 'sessions_secure_password_123',
+            'HOST': os.environ.get('POSTGRES_HOST') or os.environ.get('PGHOST') or 'localhost',
+            'PORT': os.environ.get('POSTGRES_PORT') or os.environ.get('PGPORT') or '5432',
         }
     }
 else:
@@ -127,9 +138,18 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
 }
 
-# CORS Settings
+# CORS & CSRF Settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'http://localhost:8080,http://127.0.0.1:8080,https://*.railway.app'
+    ).split(',')
+    if origin.strip()
+]
 
 # OAuth / Frontend Configs
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
