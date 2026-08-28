@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// Resolve API base URL from Vite environment variable (embedded during production build)
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

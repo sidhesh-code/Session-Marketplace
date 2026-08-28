@@ -46,6 +46,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
     container_name: sessions_frontend
     restart: always
     environment:
