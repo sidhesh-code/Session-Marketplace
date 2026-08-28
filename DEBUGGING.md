@@ -64,3 +64,29 @@ Updated `backend/bookings/views.py` to import `IsUserRole` and updated all booki
 
 ## Verification
 Created test case `test_creator_cannot_book_session` in `backend/bookings/tests.py`. Executed Django test suite and verified that a `CREATOR` role receives `403 Forbidden` when attempting to book a session.
+
+---
+
+# Issue 4: Empty Public Session Catalog Due to Unseeded PostgreSQL Database
+
+## Symptom
+When navigating to the public Session Catalog at `http://localhost:8080/` or `http://localhost:8080/sessions`, the catalog displayed "No sessions available" and no session cards were present to view session details or evaluate booking flows.
+
+## Diagnosis
+1. Tested backend REST API directly: `GET http://localhost:8080/api/sessions/` returned `HTTP 200 OK` with payload `[]` (empty list).
+2. Queried PostgreSQL database via Django shell: `User.objects.count() = 1`, `Session.objects.count() = 0`.
+3. The database contained 0 published session records. Because no seed command existed in Django, fresh deployments lacked demo sessions for public browsing.
+
+## Root Cause
+Lack of an automated database seed command in Django to populate demo mentorship sessions on startup when `Session.objects.count() == 0`.
+
+## Fix
+1. Created custom Django management command `backend/sessions_app/management/commands/seed_demo_data.py` to auto-populate sample creator/user accounts and 3 realistic future sessions with capacities (5, 1, 10).
+2. Updated `backend/entrypoint.sh` to execute `python manage.py seed_demo_data` automatically following database migration.
+
+## Verification
+1. Rebuilt backend container (`docker compose build backend`) and restarted stack (`docker compose up -d`).
+2. Verified `GET http://localhost:8080/api/sessions/`: Returned `HTTP 200 OK` with 3 session objects containing creator details, remaining seats, and duration.
+3. Verified `GET http://localhost:8080/api/sessions/1/`: Returned `HTTP 200 OK` with complete session details.
+4. Executed `npm run build` in `frontend/`: Compiled 1574 modules with 0 errors.
+5. Executed containerized test suite: All 14 tests passed against PostgreSQL.

@@ -89,3 +89,30 @@ Rejected making large architecture refactors or rewriting the codebase since all
 
 ### How I verified it
 Ran all 14 Django DRF unit and authorization tests across `accounts`, `sessions_app`, and `bookings` apps. Verified zero secrets committed in git history.
+
+---
+
+## Prompt 4 (Public Catalog Investigation & Demo Data Seed Command)
+
+### Tool / Model
+Google DeepMind Antigravity / Gemini 3.6 Flash (High)
+
+### Prompt
+"Investigate public catalog flow. Ensure catalog is publicly accessible without auth, fetches available sessions from REST API, session detail opens on click, and authentication is only required for protected actions. Determine why catalog is empty, create seed demo data command, verify Nginx routing, test backend tests, frontend production build, and commit changes."
+
+### What I used
+API response testing (`GET /api/sessions/`), PostgreSQL ORM inspection, Django custom management command structure.
+
+### What I changed
+1. Created `backend/sessions_app/management/commands/seed_demo_data.py` to seed sample creator/user accounts and 3 mentorship sessions.
+2. Updated `backend/entrypoint.sh` to automatically run `python manage.py seed_demo_data` on startup if DB is empty.
+
+### What I rejected
+Rejected hardcoding mock data inside frontend React components or weakening API authentication/permissions.
+
+### How I verified it
+1. Verified `GET http://localhost:8080/api/sessions/` returns HTTP 200 with 3 demo sessions.
+2. Verified `GET http://localhost:8080/api/sessions/1/` returns HTTP 200 with full session detail.
+3. Verified `GET http://localhost:8080/` renders React catalog UI.
+4. Executed `npm run build` in `frontend/` (0 errors).
+5. Executed 14-test backend test suite against PostgreSQL (100% pass rate).

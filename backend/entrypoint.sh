@@ -13,5 +13,8 @@ echo "Applying database migrations..."
 python manage.py makemigrations accounts sessions_app bookings --noinput
 python manage.py migrate --noinput
 
+echo "Seeding demo sessions data if empty..."
+python manage.py seed_demo_data
+
 echo "Starting Gunicorn / Django application..."
 exec "$@"
