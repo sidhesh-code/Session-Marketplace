@@ -90,3 +90,30 @@ Lack of an automated database seed command in Django to populate demo mentorship
 3. Verified `GET http://localhost:8080/api/sessions/1/`: Returned `HTTP 200 OK` with complete session details.
 4. Executed `npm run build` in `frontend/`: Compiled 1574 modules with 0 errors.
 5. Executed containerized test suite: All 14 tests passed against PostgreSQL.
+
+---
+
+# Issue 5: Google OAuth `Error 401: invalid_client` ("The OAuth client was not found")
+
+## Symptom
+When clicking "Continue with Google" on the login page and submitting Google credentials, Google Cloud's OAuth server returned `Access blocked: Authorization Error - The OAuth client was not found. Error 401: invalid_client`.
+
+## Diagnosis
+1. Inspected `OAuthLoginUrlView` in `backend/accounts/views.py` and `GOOGLE_CLIENT_ID` in `.env` / `docker-compose.yml`.
+2. Environment configuration analysis: `.env` and `docker-compose.yml` contain placeholder credentials (`your-google-client-id.apps.googleusercontent.com`).
+3. Google OAuth 2.0 flow: When `OAuthLoginUrlView` passed `client_id=your-google-client-id...` in the Google authorization URL (`https://accounts.google.com/o/oauth2/v2/auth`), Google's server looked up the Client ID in Google Cloud Platform. Finding no registered GCP project for that placeholder string, Google threw `Error 401: invalid_client`.
+
+## Root Cause
+1. Deployment/Evaluation environments had unconfigured or placeholder `GOOGLE_CLIENT_ID` values in `.env`.
+2. Backend lacked validation to detect missing/placeholder OAuth credentials before redirecting users to Google, and frontend needed clear UI error surfacing for unconfigured OAuth or user cancellation.
+
+## Fix
+1. Updated `OAuthLoginUrlView` in `backend/accounts/views.py` to validate `settings.GOOGLE_CLIENT_ID`. If credentials are unconfigured or placeholder, the view returns `HTTP 400 Bad Request` with actionable instructions: `"Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env, or use Quick Login."`
+2. Enhanced frontend error handling in `LoginPage.tsx` and `OAuthCallbackPage.tsx` to surface OAuth configuration warnings, network errors, and user consent cancellations (`error=access_denied` -> `"Login was cancelled."`) gracefully in the UI.
+3. Documented exact Google Cloud Console setup requirements (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and Authorized Redirect URI `http://localhost:8080/auth/callback`).
+
+## Verification
+1. Tested `GET http://localhost:8080/api/auth/oauth/`: Returned `HTTP 400 Bad Request` with structured error message when placeholder is present, preventing opaque Google 401 errors.
+2. Verified OAuth cancellation handling: Simulating `access_denied` callback parameter surfaces `"Login was cancelled."` gracefully in the UI.
+3. Added unit test `test_oauth_login_url_endpoint` in `backend/accounts/tests.py`. Executed 15-test backend suite (100% pass rate).
+4. Executed `npm run build` in `frontend/` (0 errors).

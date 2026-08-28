@@ -26,6 +26,15 @@ class OAuthLoginUrlView(APIView):
     def get(self, request):
         client_id = settings.GOOGLE_CLIENT_ID
         redirect_uri = settings.GOOGLE_REDIRECT_URI
+
+        if not client_id or "your-google-client-id" in client_id:
+            return Response(
+                {
+                    "detail": "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env, or use Quick Login."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
         
         auth_url = (

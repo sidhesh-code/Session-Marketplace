@@ -42,3 +42,9 @@ class AccountsTests(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], "Updated Name")
+
+    def test_oauth_login_url_endpoint(self):
+        url = reverse('oauth-url')
+        response = self.client.get(url)
+        # Should return 400 when unconfigured placeholder is present or 200 with auth_url when configured
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST])

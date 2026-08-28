@@ -116,3 +116,30 @@ Rejected hardcoding mock data inside frontend React components or weakening API 
 3. Verified `GET http://localhost:8080/` renders React catalog UI.
 4. Executed `npm run build` in `frontend/` (0 errors).
 5. Executed 14-test backend test suite against PostgreSQL (100% pass rate).
+
+---
+
+## Prompt 5 (Google OAuth Error 401 Investigation & Error Surfacing)
+
+### Tool / Model
+Google DeepMind Antigravity / Gemini 3.6 Flash (High)
+
+### Prompt
+"Investigate Google OAuth Error 401 invalid_client ('The OAuth client was not found'). Inspect frontend & backend OAuth configs, Django settings, environment variables, Google OAuth client ID, and redirect URI. Verify backend code exchange, JWT token issuance, protected endpoints, and existing booking functionality. Surface OAuth cancellation/failure gracefully in UI."
+
+### What I used
+Django settings inspection, OAuth URL parameter verification, frontend React error state handling, DRF unit test suite.
+
+### What I changed
+1. Added backend credential validation in `OAuthLoginUrlView` (`backend/accounts/views.py`) to return a clear 400 Bad Request error if `GOOGLE_CLIENT_ID` is missing/placeholder.
+2. Added `test_oauth_login_url_endpoint` to `backend/accounts/tests.py`.
+3. Verified frontend cancellation and failure handling (`LoginPage.tsx` & `OAuthCallbackPage.tsx`).
+
+### What I rejected
+Rejected replacing OAuth with password authentication, bypassing Google authentication, or hardcoding credentials into source files.
+
+### How I verified it
+1. Verified `GET http://localhost:8080/api/auth/oauth/` returns HTTP 400 with actionable configuration instructions when placeholder credentials are used.
+2. Verified OAuth cancellation (`error=access_denied`) displays "Login was cancelled." in UI.
+3. Executed 15-test backend test suite against PostgreSQL (100% pass rate).
+4. Executed `npm run build` in `frontend/` (0 errors).
