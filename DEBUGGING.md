@@ -45,3 +45,22 @@ Updated the response interceptor to check if `originalRequest.url.includes('/aut
 
 ## Verification
 Simulated expired refresh token scenario in browser subagent / unit tests. Verified that an invalid refresh token immediately logs out the user and redirects to `/login` without extra network requests.
+
+---
+
+# Issue 3: Missing Role Permission Enforcement on Booking API Endpoints
+
+## Symptom
+During QA security audit, an authenticated user with the `CREATOR` role sent a `POST` request to `/api/sessions/<id>/book/` and received `201 Created`, successfully booking a session seat.
+
+## Diagnosis
+Inspected `backend/bookings/views.py`. `BookSessionView`, `BookingListView`, `ActiveBookingListView`, `PastBookingListView`, and `CancelBookingView` were configured with `permission_classes = [permissions.IsAuthenticated]`.
+
+## Root Cause
+`IsAuthenticated` grants access to any authenticated request regardless of role. While `IsUserRole` permission class was defined in `accounts/permissions.py`, it was not applied to the booking API views.
+
+## Fix
+Updated `backend/bookings/views.py` to import `IsUserRole` and updated all booking views to set `permission_classes = [IsUserRole]`.
+
+## Verification
+Created test case `test_creator_cannot_book_session` in `backend/bookings/tests.py`. Executed Django test suite and verified that a `CREATOR` role receives `403 Forbidden` when attempting to book a session.

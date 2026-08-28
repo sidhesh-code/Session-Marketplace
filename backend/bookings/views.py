@@ -8,17 +8,18 @@ from bookings.models import Booking
 from bookings.serializers import BookingSerializer
 from bookings.services import book_session, cancel_booking
 
+from accounts.permissions import IsUserRole
+
 class BookSessionView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsUserRole]
 
     def post(self, request, session_id):
-        # Optional: verify role is USER
         booking = book_session(request.user, session_id)
         serializer = BookingSerializer(booking)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class BookingListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsUserRole]
 
     def get(self, request):
         bookings = Booking.objects.filter(user=request.user).select_related('session', 'session__creator')
@@ -26,7 +27,7 @@ class BookingListView(APIView):
         return Response(serializer.data)
 
 class ActiveBookingListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsUserRole]
 
     def get(self, request):
         now = timezone.now()
@@ -39,7 +40,7 @@ class ActiveBookingListView(APIView):
         return Response(serializer.data)
 
 class PastBookingListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsUserRole]
 
     def get(self, request):
         now = timezone.now()
@@ -52,7 +53,7 @@ class PastBookingListView(APIView):
         return Response(serializer.data)
 
 class CancelBookingView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsUserRole]
 
     def post(self, request, pk):
         booking = cancel_booking(request.user, pk)

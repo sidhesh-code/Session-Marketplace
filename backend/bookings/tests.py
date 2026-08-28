@@ -43,6 +43,13 @@ class BookingsTests(TransactionTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Booking.objects.filter(session=self.future_session, status='ACTIVE').count(), 1)
 
+    def test_creator_cannot_book_session(self):
+        client = APIClient()
+        client.force_authenticate(user=self.creator)
+        url = reverse('public-session-book', kwargs={'session_id': self.future_session.id})
+        response = client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_duplicate_active_booking_rejected(self):
         client = APIClient()
         client.force_authenticate(user=self.user_a)

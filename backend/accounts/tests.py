@@ -26,6 +26,12 @@ class AccountsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_invalid_jwt_token_returns_401(self):
+        url = reverse('profile-detail')
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer invalid.corrupted.jwt.token')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_authenticated_profile_update(self):
         user = User.objects.create_user(email="test@example.com", name="Initial Name", role=User.Role.USER)
         self.client.force_authenticate(user=user)

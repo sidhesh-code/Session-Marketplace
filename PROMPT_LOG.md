@@ -65,3 +65,27 @@ Attempted direct API requests to Creator endpoints using a `USER` role JWT token
 * **Why it was wrong**: A standard unique constraint on `('user', 'session')` prevents a user from EVER booking a session again if they previously booked and subsequently cancelled their booking (`status='CANCELLED'`). A cancelled booking still exists in the database for history/audit purposes, so any future booking attempt by the same user would trigger a DB unique violation.
 * **Correction**: Replaced `unique_together` with a PostgreSQL partial unique index: `models.UniqueConstraint(fields=['user', 'session'], condition=models.Q(status='ACTIVE'), name='unique_active_booking_per_user_session')`. This enforces uniqueness ONLY for active bookings.
 * **Verification**: Created a test case where a user books a session, cancels the booking (status becomes CANCELLED), and then re-books the same session. Verified that re-booking succeeds cleanly without database constraint errors, while booking twice concurrently returns 409 Conflict.
+
+---
+
+## Prompt 3 (Senior Code Review & QA Audit)
+
+### Tool / Model
+Google DeepMind Antigravity / Gemini 3.7 Sonnet
+
+### Prompt
+"Perform a complete audit of the CURRENT implementation against every requirement from the original assignment. Inspect code, Docker configuration, database models, APIs, frontend, tests, and documentation. Verify concurrency, authorization, secrets, and database constraints. Fix high-priority issues."
+
+### What I used
+Automated repository scan, git log secret inspection, and full backend Django DRF test execution suite.
+
+### What I changed
+1. Enforced `IsUserRole` permission class across booking API views in `backend/bookings/views.py` so `CREATOR` accounts receive HTTP 403 Forbidden when attempting to book sessions.
+2. Added `test_creator_cannot_book_session` to `backend/bookings/tests.py`.
+3. Added `test_invalid_jwt_token_returns_401` to `backend/accounts/tests.py`.
+
+### What I rejected
+Rejected making large architecture refactors or rewriting the codebase since all 32 requirement criteria were structurally intact and passed verification.
+
+### How I verified it
+Ran all 14 Django DRF unit and authorization tests across `accounts`, `sessions_app`, and `bookings` apps. Verified zero secrets committed in git history.
