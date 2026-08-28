@@ -2,11 +2,6 @@
 
 > **Sessions Marketplace** is a full-stack platform where users can discover, browse, and book live sessions while creators can publish, manage, and track their sessions in real time. It features role-based access control (USER / CREATOR), concurrency-safe seat reservation using PostgreSQL row-level locks, stateless JWT authentication, and Google OAuth 2.0.
 
-### 🌐 Live Deployment
-* **Frontend App**: [https://poetic-dream-production-abfb.up.railway.app](https://poetic-dream-production-abfb.up.railway.app/)
-* **Backend API**: [https://session-marketplace-production.up.railway.app](https://session-marketplace-production.up.railway.app/)
-* **Health Check**: [https://session-marketplace-production.up.railway.app/api/health/](https://session-marketplace-production.up.railway.app/api/health/)
-
 ---
 
 ## Overview
