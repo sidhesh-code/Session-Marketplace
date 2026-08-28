@@ -37,7 +37,8 @@ export const LoginPage: React.FC = () => {
       localStorage.setItem('oauth_role', selectedRole);
       window.location.href = auth_url;
     } catch (err: any) {
-      setErrorMsg('Failed to initialize Google OAuth. Try Quick Dev Login below.');
+      const errorDetail = err.response?.data?.detail || 'Failed to initialize Google OAuth. Try Quick Dev Login below.';
+      setErrorMsg(errorDetail);
       setLoading(false);
     }
   };

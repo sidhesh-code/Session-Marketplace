@@ -1,4 +1,5 @@
 import requests
+from urllib.parse import urlencode
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -35,13 +36,15 @@ class OAuthLoginUrlView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        scope = "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
-        
-        auth_url = (
-            f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"response_type=code&client_id={client_id}&"
-            f"redirect_uri={redirect_uri}&scope={scope}"
-        )
+        params = {
+            "response_type": "code",
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+            "access_type": "offline",
+            "prompt": "select_account",
+        }
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
         return Response({"auth_url": auth_url})
 
 class OAuthCallbackView(APIView):

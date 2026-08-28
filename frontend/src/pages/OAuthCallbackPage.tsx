@@ -33,7 +33,12 @@ export const OAuthCallbackPage: React.FC = () => {
         navigate(tokens.user?.role === 'CREATOR' ? '/creator' : '/sessions');
       })
       .catch((err: any) => {
-        setErrorMsg(err.response?.data?.detail || 'Authentication failed during Google OAuth code exchange.');
+        const errorDetail =
+          err.response?.data?.error?.error_description ||
+          err.response?.data?.error?.error ||
+          err.response?.data?.detail ||
+          'Authentication failed during Google OAuth code exchange.';
+        setErrorMsg(errorDetail);
       });
   }, [searchParams, loginWithTokens, navigate]);
 
