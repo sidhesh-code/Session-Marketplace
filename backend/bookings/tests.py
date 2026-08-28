@@ -1,4 +1,4 @@
-import pytest
+from django.test import TransactionTestCase
 from concurrent.futures import ThreadPoolExecutor
 from django.urls import reverse
 from django.utils import timezone
@@ -11,9 +11,8 @@ from accounts.models import User
 from sessions_app.models import Session
 from bookings.models import Booking
 
-@pytest.mark.django_db(transaction=True)
-class TestBookings:
-    def setup_method(self):
+class BookingsTests(TransactionTestCase):
+    def setUp(self):
         self.creator = User.objects.create_user(email="creator@test.com", name="Creator", role=User.Role.CREATOR)
         self.user_a = User.objects.create_user(email="usera@test.com", name="User A", role=User.Role.USER)
         self.user_b = User.objects.create_user(email="userb@test.com", name="User B", role=User.Role.USER)
@@ -41,8 +40,8 @@ class TestBookings:
         client.force_authenticate(user=self.user_a)
         url = reverse('public-session-book', kwargs={'session_id': self.future_session.id})
         response = client.post(url)
-        assert response.status_code == status.HTTP_201_CREATED
-        assert Booking.objects.filter(session=self.future_session, status='ACTIVE').count() == 1
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Booking.objects.filter(session=self.future_session, status='ACTIVE').count(), 1)
 
     def test_duplicate_active_booking_rejected(self):
         client = APIClient()
@@ -51,12 +50,12 @@ class TestBookings:
         
         # First booking succeeds
         resp1 = client.post(url)
-        assert resp1.status_code == status.HTTP_201_CREATED
+        self.assertEqual(resp1.status_code, status.HTTP_201_CREATED)
 
         # Duplicate active booking fails with 409 Conflict
         resp2 = client.post(url)
-        assert resp2.status_code == status.HTTP_409_CONFLICT
-        assert "already have an active booking" in resp2.data['detail']
+        self.assertEqual(resp2.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("already have an active booking", resp2.data['detail'])
 
     def test_booking_started_session_rejected(self):
         client = APIClient()
@@ -64,8 +63,8 @@ class TestBookings:
         url = reverse('public-session-book', kwargs={'session_id': self.started_session.id})
         
         response = client.post(url)
-        assert response.status_code == status.HTTP_409_CONFLICT
-        assert "already started" in response.data['detail']
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("already started", response.data['detail'])
 
     def test_booking_when_full_rejected(self):
         client_a = APIClient()
@@ -74,14 +73,14 @@ class TestBookings:
         
         # User A gets the only seat
         resp_a = client_a.post(url)
-        assert resp_a.status_code == status.HTTP_201_CREATED
+        self.assertEqual(resp_a.status_code, status.HTTP_201_CREATED)
 
         # User B attempts to book full session
         client_b = APIClient()
         client_b.force_authenticate(user=self.user_b)
         resp_b = client_b.post(url)
-        assert resp_b.status_code == status.HTTP_409_CONFLICT
-        assert "Session is full" in resp_b.data['detail']
+        self.assertEqual(resp_b.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("Session is full", resp_b.data['detail'])
 
     def test_booking_concurrency_postgresql(self):
         """
@@ -96,7 +95,6 @@ class TestBookings:
         url = reverse('public-session-book', kwargs={'session_id': session_id})
 
         def make_booking(user):
-            # Close existing connection to ensure separate thread DB connections
             connection.close()
             client = APIClient()
             client.force_authenticate(user=user)
@@ -110,8 +108,8 @@ class TestBookings:
             res2 = future2.result()
 
         status_codes = [res1.status_code, res2.status_code]
-        assert status.HTTP_201_CREATED in status_codes
-        assert status.HTTP_409_CONFLICT in status_codes
+        self.assertIn(status.HTTP_201_CREATED, status_codes)
+        self.assertIn(status.HTTP_409_CONFLICT, status_codes)
 
         active_count = Booking.objects.filter(session_id=session_id, status='ACTIVE').count()
-        assert active_count == 1
+        self.assertEqual(active_count, 1)
