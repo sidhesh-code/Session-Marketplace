@@ -1,0 +1,47 @@
+# Debugging Log
+
+This log documents real technical issues, symptoms, root causes, and fixes encountered during the development, testing, and Docker deployment of the Sessions Marketplace application.
+
+---
+
+# Issue 1: Race Condition in Concurrent Booking Test when executed without Database Row Locks
+
+## Symptom
+During early concurrency testing with 2 simultaneous threads attempting to book a session with capacity = 1, both requests returned `201 Created`, resulting in 2 active bookings for a session with capacity 1 (`active_bookings = 2`, violating Invariant 1).
+
+## Diagnosis
+Inspected the booking service execution logs. Both request threads executed `Booking.objects.filter(session=session, status='ACTIVE').count()` at the exact same millisecond before either thread committed its `Booking.create()` transaction. Both threads read `count = 0`, evaluated `0 < 1` as `True`, and proceeded to insert booking records.
+
+## Root Cause
+The initial read query did not lock the `Session` database row. Without pessimistic row locking (`select_for_update()`), PostgreSQL allowed concurrent read transactions to read snapshot data prior to transaction commit.
+
+## Fix
+Wrapped the booking verification and creation logic inside `transaction.atomic()` and acquired an exclusive lock on the session row using `.select_for_update()`:
+
+```python
+with transaction.atomic():
+    session = Session.objects.select_for_update().get(pk=session_id)
+    # validate capacity & duplicate booking inside locked block
+```
+
+## Verification
+Re-ran the automated concurrency test with Pytest and `ThreadPoolExecutor` against PostgreSQL. Thread 1 acquired the row lock, created the booking, and committed. Thread 2 waited on the row lock, re-read `active_count = 1`, failed the capacity check, and received an HTTP `409 Conflict`. Final active bookings count verified exactly equal to `1`.
+
+---
+
+# Issue 2: OAuth JWT Refresh Loop on Frontend Axios Interceptor
+
+## Symptom
+When an access token expired on the React frontend, Axios interceptor triggered a refresh request to `/api/auth/token/refresh/`. If the refresh token was also expired or invalid, the interceptor repeatedly retried the refresh endpoint in an infinite loop, freezing the browser.
+
+## Diagnosis
+The response interceptor caught the 401 error from `/api/auth/token/refresh/` and tried to send another refresh request using the same broken refresh token because `_retry` flag was not checked for refresh endpoint URLs specifically.
+
+## Root Cause
+The Axios interceptor logic checked `!originalRequest._retry`, but did not exclude requests pointing directly to `auth/token/refresh/`.
+
+## Fix
+Updated the response interceptor to check if `originalRequest.url.includes('/auth/token/refresh/')`. If a refresh request itself returns HTTP 401, clear local authentication state, wipe tokens from storage, and redirect immediately to `/login`.
+
+## Verification
+Simulated expired refresh token scenario in browser subagent / unit tests. Verified that an invalid refresh token immediately logs out the user and redirects to `/login` without extra network requests.
