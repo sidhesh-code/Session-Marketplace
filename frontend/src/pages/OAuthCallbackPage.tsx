@@ -30,7 +30,7 @@ export const OAuthCallbackPage: React.FC = () => {
     exchangeOAuthCode(code, savedRole)
       .then((tokens) => {
         loginWithTokens(tokens);
-        navigate('/sessions');
+        navigate(tokens.user?.role === 'CREATOR' ? '/creator' : '/sessions');
       })
       .catch((err: any) => {
         setErrorMsg(err.response?.data?.detail || 'Authentication failed during Google OAuth code exchange.');

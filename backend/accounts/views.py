@@ -54,6 +54,13 @@ class OAuthCallbackView(APIView):
         if not code:
             return Response({"detail": "Authorization code is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate requested role against User.Role choices
+        if role not in User.Role.values:
+            return Response(
+                {"detail": f"Invalid role '{role}'. Valid roles are: {', '.join(User.Role.values)}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Exchange authorization code for Google access token
         token_url = "https://oauth2.googleapis.com/token"
         payload = {
@@ -93,17 +100,22 @@ class OAuthCallbackView(APIView):
             if not email:
                 return Response({"detail": "Google profile missing email address."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Get or create User in local database
+            # Get or create User in local database with validated requested role
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
                     'name': name,
-                    'role': role if role in User.Role.values else User.Role.USER,
+                    'role': role,
                     'profile_image': picture
                 }
             )
 
-            # Issue JWT access & refresh tokens
+            # For existing Google accounts, update to the selected role upon Google OAuth login
+            if not created and user.role != role:
+                user.role = role
+                user.save(update_fields=['role'])
+
+            # Issue JWT access & refresh tokens with authoritative database role
             tokens = get_tokens_for_user(user)
             return Response(tokens, status=status.HTTP_200_OK)
 

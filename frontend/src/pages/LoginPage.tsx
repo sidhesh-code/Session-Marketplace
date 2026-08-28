@@ -50,7 +50,7 @@ export const LoginPage: React.FC = () => {
       const name = role === 'CREATOR' ? 'Dev Creator' : 'Dev User';
       const tokens = await devLogin(email, name, role);
       loginWithTokens(tokens);
-      navigate(role === 'CREATOR' ? '/creator' : '/sessions');
+      navigate(tokens.user?.role === 'CREATOR' ? '/creator' : '/sessions');
     } catch (err: any) {
       setErrorMsg(err.response?.data?.detail || 'Quick Dev login failed.');
     } finally {

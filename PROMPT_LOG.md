@@ -143,3 +143,32 @@ Rejected replacing OAuth with password authentication, bypassing Google authenti
 2. Verified OAuth cancellation (`error=access_denied`) displays "Login was cancelled." in UI.
 3. Executed 15-test backend test suite against PostgreSQL (100% pass rate).
 4. Executed `npm run build` in `frontend/` (0 errors).
+
+---
+
+## Prompt 6 (End-to-End Production Hardening, Concurrency & Security Audits — Steps 2–9)
+
+### Tool / Model
+Google DeepMind Antigravity / Gemini 3.7 Sonnet
+
+### Prompt
+"Perform a complete 9-step audit covering role system synchronization, authorization & IDOR edge cases, multi-threaded PostgreSQL booking race conditions, JWT refresh/expiration lifecycle, session/booking business rules, and frontend end-to-end integration."
+
+### What I used
+1. Django REST Framework `IsCreator`, `IsUserRole`, `IsSessionOwner` permission classes and `select_for_update()` row-level locks.
+2. Concurrent `ThreadPoolExecutor` test harness using separate database connections to test high-volume simultaneous booking attempts.
+3. Comprehensive DRF and JWT test suite expansion covering anonymous access denials, identity spoofing, duplicate booking rejections, seat release on cancellation, and session cascade deletions.
+
+### What I changed
+1. Synchronized the frontend role selector (`USER` / `CREATOR`) with backend Google OAuth registration and token issuance in `OAuthCallbackView`.
+2. Expanded backend test suite from 15 to 45 passing tests across `accounts`, `sessions_app`, and `bookings`.
+3. Verified clean frontend production builds (`tsc && vite build`) and updated `README.md` with complete architecture, API tables, and testing documentation.
+
+### What I rejected
+Rejected introducing unnecessary third-party packages, AI agents, LLM wrappers, or modifying the approved visual design.
+
+### How I verified it
+1. Executed `docker compose exec -T backend pytest` -> **45 passed in 8.56s (100% pass rate)**.
+2. Executed `docker compose build --no-cache frontend` -> **0 TypeScript errors, 0 warnings**.
+3. Verified all 4 Docker containers (`sessions_backend`, `sessions_frontend`, `sessions_nginx`, `sessions_postgres`) running and healthy.
+
