@@ -172,3 +172,34 @@ Rejected introducing unnecessary third-party packages, AI agents, LLM wrappers, 
 2. Executed `docker compose build --no-cache frontend` -> **0 TypeScript errors, 0 warnings**.
 3. Verified all 4 Docker containers (`sessions_backend`, `sessions_frontend`, `sessions_nginx`, `sessions_postgres`) running and healthy.
 
+---
+
+## Prompt 7 (Railway Nginx Reverse Proxy Configuration & Private Networking)
+
+### Tool / Model
+Google DeepMind Antigravity / Gemini 3.8 Flash (High)
+
+### Prompt
+"Prepare root nginx/ reverse proxy configuration for Railway production deployment. Support both local Docker Compose (backend:8000, frontend:80) and Railway private networking (session-marketplace.railway.internal:8000, poetic-dream.railway.internal:80) using environment-variable template substitution with official nginx:alpine envsubst. Preserve proxy headers, SPA routing, API prefixes, foreground execution, and verify docker-compose config."
+
+### What I used
+1. Official `nginx:alpine` `/docker-entrypoint.d/20-envsubst-on-templates.sh` template rendering mechanism.
+2. Parameterized Nginx configuration template (`nginx.conf.template`) with `${BACKEND_HOST}` and `${FRONTEND_HOST}` environment variables.
+3. Docker Compose environment variable injection (`BACKEND_HOST` and `FRONTEND_HOST`) with local fallback defaults.
+
+### What I changed
+1. Created `nginx/nginx.conf.template` parameterized with `${BACKEND_HOST}` and `${FRONTEND_HOST}` proxy upstream targets.
+2. Updated `nginx/Dockerfile` to copy `nginx.conf.template` to `/etc/nginx/templates/default.conf.template` and declare default environment variables.
+3. Replaced static `nginx/nginx.conf` with dynamic template generation.
+4. Updated `docker-compose.yml` to supply `BACKEND_HOST` and `FRONTEND_HOST` to the `nginx` service.
+5. Documented `BACKEND_HOST` and `FRONTEND_HOST` in `.env.example`.
+
+### What I rejected
+Rejected hardcoding Railway private networking domains into Nginx configs, removing proxy headers, altering Django API prefixes, or modifying frontend/backend application source code.
+
+### How I verified it
+1. Validated `docker compose config` with zero schema or parsing errors.
+2. Verified template variable substitution syntax and preserved reverse proxy headers (`Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`).
+3. Verified frontend SPA routing fallback and backend `/api/` and `/admin/` path preservation.
+
+

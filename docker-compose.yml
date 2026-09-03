@@ -59,6 +59,9 @@ services:
       dockerfile: Dockerfile
     container_name: sessions_nginx
     restart: always
+    environment:
+      BACKEND_HOST: ${BACKEND_HOST:-backend}
+      FRONTEND_HOST: ${FRONTEND_HOST:-frontend}
     ports:
       - "8080:80"
     depends_on:
