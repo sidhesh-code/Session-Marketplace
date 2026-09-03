@@ -1,5 +1,9 @@
 # Sessions Marketplace
 
+## 🚀 Live Demo
+
+[**Open Sessions Marketplace →**](https://eloquent-learning-production-36a5.up.railway.app)
+
 > **Sessions Marketplace** is a full-stack platform where users can discover, browse, and book live sessions while creators can publish, manage, and track their sessions in real time. It features role-based access control (USER / CREATOR), concurrency-safe seat reservation using PostgreSQL row-level locks, stateless JWT authentication, and Google OAuth 2.0.
 
 ---
