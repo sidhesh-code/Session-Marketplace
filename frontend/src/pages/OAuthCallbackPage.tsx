@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { exchangeOAuthCode } from '../api/auth';
@@ -10,6 +10,7 @@ export const OAuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const exchangeStarted = useRef(false);
 
   useEffect(() => {
     const code = searchParams.get('code');
@@ -24,7 +25,13 @@ export const OAuthCallbackPage: React.FC = () => {
       return;
     }
 
-    const savedRole = (localStorage.getItem('oauth_role') as Role) || 'USER';
+    if (exchangeStarted.current) {
+      return;
+    }
+    exchangeStarted.current = true;
+
+    const rawRole = localStorage.getItem('oauth_role');
+    const savedRole: Role = rawRole === 'CREATOR' || rawRole === 'USER' ? rawRole : 'USER';
     localStorage.removeItem('oauth_role');
 
     exchangeOAuthCode(code, savedRole)
